@@ -6,6 +6,24 @@ import { convert_to_links } from "./use_everywhere_apply.js";
 import { UpdateBlocker } from "./use_everywhere_ui.js";
 import { app } from "../../scripts/app.js";
 
+
+function reconnect_slots(node, slot_dest, slot_ori) {
+    // This function connects the link at input "slot_ori" to "slot_dest" in "node"
+    // Is a patch to frontend 1.16.x loading 1.15.x workflows.
+    // In this case "configure" doesn't recognize "anything" inputs and creates new inputs
+    const cur_link_id = node.inputs[slot_ori].link;
+    const link = app.graph.links[cur_link_id];
+    const origin_id = link.origin_id;
+    const origin_node = app.graph.getNodeById(origin_id);
+    const origin_slot = link.origin_slot;
+    app.graph.removeLink(cur_link_id);
+    origin_node.connect(origin_slot, node, slot_dest);
+    node.inputs.pop();
+    node.setSize(node.computeSize());
+    app.graph.setDirtyCanvas(true, true);
+}
+
+
 class GraphAnalyser {
     static _instance;
     static instance() {
@@ -58,7 +76,22 @@ class GraphAnalyser {
                 add_ue_from_node_in_group(ues, node, groupNode.id, group_data); 
             })
         })
-    
+
+        // Fix loading of old nodes (frontend 1.16.x loading 1.15.x workflows)
+        app.graph.nodes.filter((node) => is_UEnode(node)).forEach(node => {
+           if (node.type=="Anything Everywhere" && node.inputs.length==2 && !node.inputs[0].link && node.inputs[1].link) {
+               reconnect_slots(node, 0, 1);
+           }
+           if (node.type=="Anything Everywhere?" && node.inputs.length==5 && !node.inputs[0].link && node.inputs[4].link) {
+               reconnect_slots(node, 0, 4);
+           }
+           if (node.type=="Anything Everywhere3" && node.inputs.length==6 && !node.inputs[0].link && node.inputs[5].link) {
+               reconnect_slots(node, 2, 5);
+               reconnect_slots(node, 1, 4);
+               reconnect_slots(node, 0, 3);
+           }
+        })
+
         const links_added = new Set();
         // Look for unconnected inputs and see if we can connect them
         live_nodes.filter((node) => !is_UEnode(node)).forEach(node => {
