@@ -61,14 +61,16 @@ class GraphAnalyser {
         return p;
     }
 
-    async analyse_graph(check_for_loops=false) {
+    async analyse_graph(check_for_loops=false, even_mutted=false) {
         if (this.pause_depth > 0) { return this.original_graphToPrompt.apply(app) }
         this.ambiguity_messages = [];
         var p = { workflow:app.graph.serialize() };
                 
         // Create a UseEverywhereList and populate it from all live (not bypassed) nodes
         const ues = new UseEverywhereList();
-        const live_nodes = p.workflow.nodes.filter((node) => node_is_live(node))
+        var live_nodes = p.workflow.nodes;
+        if (!even_mutted)
+            live_nodes = live_nodes.filter((node) => node_is_live(node));
         live_nodes.filter((node) => is_UEnode(node)).forEach(node => { add_ue_from_node(ues, node); })
         live_nodes.filter((node) => (get_real_node(node.id, Logger.INFORMATION) && GroupNodeHandler.isGroupNode(get_real_node(node.id)))).forEach( groupNode => {
             const group_data = GroupNodeHandler.getGroupData(get_real_node(groupNode.id));

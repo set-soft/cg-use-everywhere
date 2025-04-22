@@ -141,6 +141,14 @@ function node_menu_settings(options, node) {
                 convert_to_links(ues, node.id);
                 app.graph.remove(node);
             }
+        },
+        {
+            content: "Convert to real links (even off)",
+            callback: async () => {
+                const ues = await GraphAnalyser.instance().analyse_graph(false, true);
+                convert_to_links(ues, node.id);
+                app.graph.remove(node);
+            }
         }
     )
     options.push(null);
@@ -161,6 +169,18 @@ function canvas_menu_settings(options) {
         callback: async () => {
             if (window.confirm("This will convert all links created by Use Everywhere to real links, and delete all the Use Everywhere nodes. Is that what you want?")) {
                 const ues = await GraphAnalyser.instance().analyse_graph();
+                LinkRenderController.instance().pause();
+                convert_to_links(ues, -1);
+                remove_all_ues();
+                app.graph.change();
+            }
+        }
+    },
+    {
+        content: "Convert all UEs to real links (even off)",
+        callback: async () => {
+            if (window.confirm("This will convert all links created by Use Everywhere to real links, and delete all the Use Everywhere nodes. Is that what you want?")) {
+                const ues = await GraphAnalyser.instance().analyse_graph(false, true);
                 LinkRenderController.instance().pause();
                 convert_to_links(ues, -1);
                 remove_all_ues();
